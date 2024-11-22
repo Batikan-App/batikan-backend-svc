@@ -1,4 +1,4 @@
-const { getBatikHandler, getBatikByIdHandler, searchByKeywordHandler, searchByOriginHandler, userRegisterHandler, userLoginHandler, userLogoutHandler, getProfileHandler, editProfileHandler, getCartHandler, addCartHandler, updateCartHandler, deleteCartHandler, getOrderHandler, addOrderHandler, updateOrderHandler, batikPredictHandler, batikScanHandler } = require('../server/handler');
+const { getBatikHandler, getBatikByIdHandler, searchByKeywordHandler, searchByOriginHandler, userRegisterHandler, userLoginHandler, userLogoutHandler, getProfileHandler, editProfileHandler, getCartHandler, addCartHandler, updateCartHandler, deleteCartHandler, getOrderHandler, addOrderHandler, updateOrderHandler, batikPredictHandler } = require('../server/handler');
 
 const routes = [
   {
@@ -30,23 +30,35 @@ const routes = [
     method: 'POST',
     handler: userRegisterHandler,
     options: {
-        payload: {
-            allow: 'application/json',
-            parse: true
-        }
+      payload: {
+        allow: 'application/json',
+        parse: true
+      }
     }
   },
 
   {
     path: '/api/auth/login',
     method: 'POST',
-    handler: userLoginHandler
+    handler: userLoginHandler,
+    options: {
+      payload: {
+        allow: 'application/json',
+        parse: true
+      }
+    }
   },
 
   {
     path: '/api/auth/logout',
     method: 'POST',
-    handler: userLogoutHandler
+    handler: userLogoutHandler,
+    options: {
+      payload: {
+        allow: 'application/json',
+        parse: true
+      }
+    }
   },
 
 
@@ -61,10 +73,10 @@ const routes = [
     method: 'PUT',
     handler: editProfileHandler,
     options: {
-        payload: {
-            allow: 'application/json',
-            parse: true
-        }
+      payload: {
+        allow: 'application/json',
+        parse: true
+      }
     }
 
   },
@@ -78,7 +90,13 @@ const routes = [
   {
     path: '/api/user/cart',
     method: 'POST',
-    handler: addCartHandler
+    handler: addCartHandler,
+    options: {
+      payload: {
+        allow: 'application/json',
+        parse: true
+      }
+    }
   },
 
   {
@@ -86,10 +104,10 @@ const routes = [
     method: 'PATCH',
     handler: updateCartHandler,
     options: {
-        payload: {
-            allow: 'application/json',
-            parse: true
-        }
+      payload: {
+        allow: 'application/json',
+        parse: true
+      }
     }
 
   },
@@ -109,7 +127,13 @@ const routes = [
   {
     path: '/api/user/order',
     method: 'POST',
-    handler: addOrderHandler
+    handler: addOrderHandler,
+    options: {
+      payload: {
+        allow: 'application/json',
+        parse: true
+      }
+    }
   },
 
   {
@@ -117,10 +141,10 @@ const routes = [
     method: 'PUT',
     handler: updateOrderHandler,
     options: {
-        payload: {
-            allow: 'application/json',
-            parse: true
-        }
+      payload: {
+        allow: 'application/json',
+        parse: true
+      }
     }
 
   },
@@ -136,12 +160,6 @@ const routes = [
         multipart: true
       }
     }
-  },
-
-  {
-    path: '/api/batik/scan',
-    method: 'GET',
-    handler: batikScanHandler
   }
 
 ]

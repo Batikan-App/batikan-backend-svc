@@ -3,6 +3,7 @@ const { Firestore } = require('@google-cloud/firestore');
 async function getOrder(userId) {
   const db = new Firestore();
 
+  // Fetch document for orders user
   const userOrderRef = db.collection('orders').doc(userId);
 
   // List all sub-collections (e.g., Kawung, Mega Mendung)
@@ -32,6 +33,7 @@ async function getOrder(userId) {
 async function addOrder(userId) {
   const db = new Firestore();
 
+  // Fetch document for orders and carts
   const orderCollection = db.collection('orders').doc(userId);
   const cartCollection = db.collection('carts').doc(userId);
 
@@ -46,8 +48,6 @@ async function addOrder(userId) {
     ...cartItem.data(),
     "status": "Pengiriman"
   };
-
-  
 
   // Retrieve all sub-collections under the cart item
   const subCollections = await cartCollection.listCollections();

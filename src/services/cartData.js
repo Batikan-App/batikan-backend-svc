@@ -8,6 +8,7 @@ async function getCart(userId) {
   // Fetch the parent document for totalPrice
   const userCartDoc = await userCartRef.get();
 
+  // Check if parent document is exists
   if (!userCartDoc.exists) {
     return {
       cartItems: [],
@@ -17,7 +18,7 @@ async function getCart(userId) {
 
   const totalPrice = userCartDoc.data().totalPrice || 0;
 
-  // List all sub-collections (e.g., Kawung, Mega Mendung)
+  // List all sub-collections carts
   const subCollections = await userCartRef.listCollections();
   const cartItems = [];
 
@@ -41,18 +42,6 @@ async function getCart(userId) {
 
 }
 
-async function checkCart(userId, itemId) {
-  const db = new Firestore();
-
-  const cartCollection = await db.collection('carts').doc(userId).get();
-  /*
-  const existingItemQuery = await cartCollection
-      .where('userId', '==', userId)
-      .where('itemId', '==', itemId)
-      .get();*/
-
-  return cartCollection;
-}
 
 async function addCart(userId, itemId, quantity) {
   const db = new Firestore();
@@ -63,6 +52,7 @@ async function addCart(userId, itemId, quantity) {
   const name = batikItem.data().name;
   const price = batikItem.data().price;
 
+  // Preparing data for Cart Item
   const item = {
     userId,
     itemId,
@@ -104,7 +94,7 @@ async function updateCart(userId, batikId, batikSubId, quantity) {
   // Reference to the specific batik item
   const batikItemRef = userCartRef.collection(batikId).doc(batikSubId);
 
-  // Fetch the batik item to update
+  // Fetch the batik item and check if it's already exists
   const batikItemSnapshot = await batikItemRef.get();
   if (!batikItemSnapshot.exists) {
     throw new Error('Batik item not found');
@@ -118,7 +108,7 @@ async function updateCart(userId, batikId, batikSubId, quantity) {
     const remainingItemsSnapshot = await userCartRef.collection(batikId).get();
     if (remainingItemsSnapshot.empty) {
       // If the collection is empty, delete the entire sub-collection
-      await deleteCollection(db, userCartRef.collection(batikId), 10); // Batch delete
+      await deleteCollection(db, userCartRef.collection(batikId), 10);
     }
   } else {
     // Update only the quantity if it's not zero
@@ -163,4 +153,4 @@ async function deleteCart(userId) {
 
 
 
-module.exports = { getCart, addCart, checkCart, updateCart, deleteCart };
+module.exports = { getCart, addCart, updateCart, deleteCart };

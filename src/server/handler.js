@@ -5,7 +5,7 @@ const uuid = require('uuid');
 const { userRegisterData, userLoginData, registerCheck, userSessionData, sessionDelete } = require('../services/authUsers');
 const { getUserProfile, updateUserProfile } = require('../services/profileUsers');
 const { batikData, batikGetIdData, batikCategories, batikFilterCategories, searchByOrigin } = require('../services/batikData');
-const { getCart, addCart, checkCart, updateCart, deleteCart } = require('../services/cartData');
+const { getCart, addCart, updateCart, deleteCart } = require('../services/cartData');
 const { getOrder, addOrder, updateOrder } = require('../services/orderData');
 const scanBatik = require('../services/scanBatik');
 
@@ -14,6 +14,8 @@ async function getBatikHandler(request, h) {
 
   // Fetch all Batik data
   const allBatik = await batikData();
+
+  // Mapping all batik data
   const data = allBatik.docs.map((doc) => ({
     id: doc.id,
     data: {
@@ -58,20 +60,20 @@ async function getBatikByIdHandler(request, h) {
 }
 
 async function searchByKeywordHandler(request, h) {
-  const { q } = request.query; // Get the query parameter 'q'
+  const { q } = request.query; // Get the query parameter
 
   if (!q) {
     return h.response({
       status: 'fail',
-      message: 'Query parameter "q" is required',
+      message: 'Query parameter is required',
     }).code(400);
   }
 
   try {
-    // Step 1: Fetch all documents from the 'batik' collection
+    // Fetch all documents from the 'batik' collection
     const querySnapshot = await batikData();
 
-    // Step 2: Filter documents where any field contains the keyword
+    // Filter documents where any field contains the keyword
     const keyword = q.toLowerCase(); // Normalize the keyword for case-insensitive matching
 
     const filteredData = querySnapshot.docs
@@ -93,7 +95,7 @@ async function searchByKeywordHandler(request, h) {
         });
       });
 
-    // Step 3: Return the filtered data
+    // Return the filtered data
     if (filteredData.length > 0) {
       return h.response({
         status: 'success',
@@ -116,12 +118,12 @@ async function searchByKeywordHandler(request, h) {
 
 
 async function searchByOriginHandler(request, h) {
-  const { q } = request.query; // Get the query parameter 'q'
+  const { q } = request.query; // Get the query parameter
 
   if (!q) {
     return h.response({
       status: 'fail',
-      message: 'Query parameter "q" is required',
+      message: 'Query parameter is required',
     }).code(400);
   }
 
@@ -278,6 +280,7 @@ async function getProfileHandler(request, h) {
 
   const userDoc = await getUserProfile(email);
 
+  // Prepare data profile
   const data = {
     "name": userDoc.data().name,
     "email": userDoc.data().email,
@@ -290,6 +293,7 @@ async function getProfileHandler(request, h) {
       message: 'User not found'
     }).code(404);
   }
+
   return h.response({
     status: 'success',
     data: data
@@ -451,19 +455,6 @@ async function batikPredictHandler(request, h) {
 
   const { label, confidence } = await scanBatik(model, image);
 
-  /*
-  const id = crypto.randomUUID();
-  const createdAt = new Date().toISOString();
-
-  const data = {
-    "id": id,
-    "result": label,
-    "suggestion": suggestion,
-    "createdAt": createdAt
-  }
-
-  await storeData(id, data); 
-  */
   const response = h.response({
     status: 'success',
     message: 'Model is predicted successfully',
@@ -477,8 +468,5 @@ async function batikPredictHandler(request, h) {
   return response;
 }
 
-async function batikScanHandler(request, h) {
-  return;
-}
 
-module.exports = { getBatikHandler, getBatikByIdHandler, getBatikCategories, searchByKeywordHandler, searchByOriginHandler, userRegisterHandler, userLoginHandler, userLogoutHandler, getProfileHandler, editProfileHandler, addCartHandler, getCartHandler, updateCartHandler, deleteCartHandler, getOrderHandler, addOrderHandler, updateOrderHandler, batikPredictHandler, batikScanHandler };
+module.exports = { getBatikHandler, getBatikByIdHandler, getBatikCategories, searchByKeywordHandler, searchByOriginHandler, userRegisterHandler, userLoginHandler, userLogoutHandler, getProfileHandler, editProfileHandler, addCartHandler, getCartHandler, updateCartHandler, deleteCartHandler, getOrderHandler, addOrderHandler, updateOrderHandler, batikPredictHandler };
