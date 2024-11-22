@@ -16,7 +16,7 @@ async function scanBatik(model, image) {
         const maxScoreIndex = scores.indexOf(Math.max(...scores)); // Get index of the highest score
 
         // Map the index to a class label
-        const labels = ['Kawung', 'Mega Mendung', 'Parang', 'Truntum']; // Update with your class labels
+        const labels = ["insang", "kawung", "mega mendung", "parang", "sidoluhur", "truntum", "tumpal"]; // Update with your class labels
         const predictedLabel = labels[maxScoreIndex];
         const confidence = (scores[maxScoreIndex] * 100).toFixed(2); // Confidence as percentage
 
