@@ -1,60 +1,56 @@
 const { Firestore } = require('@google-cloud/firestore');
 
-async function userRegisterData(email, data) {
+async function userRegisterData(userId, data) {
   const db = new Firestore();
 
-  const register = db.collection('credential');
+  const register = db.collection('users');
 
-  return register.doc(email).set(data);
+  return register.doc(userId).set(data);
 }
 
-async function registerCheck(email) {
+async function userCheck(email) {
   const db = new Firestore();
 
   // Find existing user by email
-  const userDoc = await db.collection('credential').doc(email).get();
+  const userDoc = await db.collection('users').where('email', '==', email).get();
 
   return userDoc;
 }
 
-async function userLoginData(email, password) {
+async function userSessionData(userId, token) {
   const db = new Firestore();
 
-  // Find the user by email
-  const userDoc = await db.collection('credential').doc(email).get();
-
-  return userDoc;
-}
-
-async function userSessionData(user, token) {
-  const db = new Firestore();
-
+  // Define session data
   const sessionData = {
-    email: user,
+    id: token,
+    userId: userId,
     created_at: Firestore.Timestamp.now(),
     expires_at: Firestore.Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)), // 24 hours
   };
 
-  const session = await db.collection('session').doc(token).set(sessionData);
+  // Store session data into database
+  const sessions = await db.collection('sessions').doc(token).set(sessionData);
 
-  return session;
+  return sessions;
 }
 
 async function sessionCheck(token) {
   const db = new Firestore();
 
-  const session = await db.collection('session').doc(token).get();
+  // Fetch session data
+  const sessions = await db.collection('sessions').doc(token).get();
 
-  return session;
+  return sessions;
 
 }
 
 async function sessionDelete(token) {
   const db = new Firestore();
 
-  const session = await db.collection('session').doc(token).delete();
+  // Delete session data
+  const sessions = await db.collection('sessions').doc(token).delete();
 
-  return session;
+  return sessions;
 }
 
-module.exports = { userRegisterData, userLoginData, registerCheck, userSessionData, sessionCheck, sessionDelete };
+module.exports = { userRegisterData, userCheck, userSessionData, sessionCheck, sessionDelete };

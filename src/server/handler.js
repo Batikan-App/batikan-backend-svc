@@ -1,10 +1,9 @@
-//const predictClassification = require('../services/inferenceService');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const uuid = require('uuid');
-const { userRegisterData, userLoginData, registerCheck, userSessionData, sessionDelete } = require('../services/authUsers');
-const { getUserProfile, updateUserProfile } = require('../services/profileUsers');
-const { batikData, batikGetIdData, batikCategories, batikFilterCategories, searchByOrigin } = require('../services/batikData');
+const { userRegisterData, userCheck, sessionCheck, userSessionData, sessionDelete } = require('../services/authUsers');
+const { updateUserProfile, getUserProfile } = require('../services/profileUsers');
+const { batikData, batikGetIdData, searchByOrigin } = require('../services/batikData');
 const { getCart, addCart, updateCart, deleteCart } = require('../services/cartData');
 const { getOrder, addOrder, updateOrder } = require('../services/orderData');
 const scanBatik = require('../services/scanBatik');
@@ -12,22 +11,14 @@ const scanBatik = require('../services/scanBatik');
 
 async function getBatikHandler(request, h) {
 
-  // Fetch all Batik data
-  const allBatik = await batikData();
+  // Fetch all Batik items
+  const batikItem = await batikData();
 
-  // Mapping all batik data
-  const data = allBatik.docs.map((doc) => ({
+  // Fetch all data of Batik items
+  const data = batikItem.docs.map((doc) => ({
     id: doc.id,
     data: {
-      name: doc.data().name,
-      desc: doc.data().desc,
-      img: doc.data().img,
-      color: doc.data().color,
-      price: doc.data().price,
-      origin: doc.data().origin,
-      category: doc.data().category,
-      stock: doc.data().stock,
-      sold: doc.data().sold
+      ...doc.data()
     },
   }));
 
@@ -53,31 +44,33 @@ async function getBatikByIdHandler(request, h) {
     }).code(200);
   } else {
     return h.response({
-      status: 'fail',
+      status: 'failed',
       message: 'Batik not found'
     }).code(404);
   }
 }
 
 async function searchByKeywordHandler(request, h) {
-  const { q } = request.query; // Get the query parameter
+  const { q } = request.query;
 
+  // Check query parameter
   if (!q) {
     return h.response({
-      status: 'fail',
+      status: 'failed',
       message: 'Query parameter is required',
     }).code(400);
   }
 
   try {
-    // Fetch all documents from the 'batik' collection
-    const querySnapshot = await batikData();
+    // Fetch all Batik items
+    const batikItem = await batikData();
 
-    // Filter documents where any field contains the keyword
-    const keyword = q.toLowerCase(); // Normalize the keyword for case-insensitive matching
+    // Normalize the keyword for case-insensitive matching
+    const keyword = q.toLowerCase();
 
-    const filteredData = querySnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() })) // Map to include document ID
+    // Filter Batik items where any field contains the keyword
+    const filteredData = batikItem.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
       .filter(doc => {
         // Check all fields of the document
         return Object.values(doc).some(value => {
@@ -103,12 +96,11 @@ async function searchByKeywordHandler(request, h) {
       }).code(200);
     } else {
       return h.response({
-        status: 'fail',
+        status: 'failed',
         message: `No documents found with keyword "${q}"`,
       }).code(404);
     }
   } catch (error) {
-    console.error(error);
     return h.response({
       status: 'error',
       message: 'An error occurred while processing the request',
@@ -116,18 +108,20 @@ async function searchByKeywordHandler(request, h) {
   }
 }
 
-
 async function searchByOriginHandler(request, h) {
-  const { q } = request.query; // Get the query parameter
+  const { q } = request.query;
 
+  // Check query parameter
   if (!q) {
     return h.response({
-      status: 'fail',
+      status: 'failed',
       message: 'Query parameter is required',
     }).code(400);
   }
 
   try {
+
+    // Search data by it's origin
     const filteredData = await searchByOrigin(q);
 
     if (filteredData.length > 0) {
@@ -137,12 +131,11 @@ async function searchByOriginHandler(request, h) {
       }).code(200);
     } else {
       return h.response({
-        status: 'fail',
+        status: 'failed',
         message: `No documents found with origin containing "${q}"`,
       }).code(404);
     }
   } catch (error) {
-    console.error(error);
     return h.response({
       status: 'error',
       message: 'An error occurred while processing the request',
@@ -150,52 +143,25 @@ async function searchByOriginHandler(request, h) {
   }
 }
 
-
-async function getBatikCategories(request, h) {
-  const { filter } = request.query;
-
-  if (!filter) {
-    const batikArrCategories = await batikCategories();
-    return h.response({
-      status: 'success',
-      data: {
-        batikArrCategories,
-      },
-    }).code(200);
-  } else {
-    const filteredBatik = await batikFilterCategories(filter);
-    if (filteredBatik.length > 0) {
-      return h.response({
-        status: 'success',
-        data: {
-          filteredBatik
-        },
-      }).code(200);
-    } else {
-      return h.response({
-        status: 'fail',
-        message: 'No batik found with that category'
-      }).code(404);
-    }
-
-  }
-
-}
-
 async function userRegisterHandler(request, h) {
   const { name, email, phone, password, verify_password } = request.payload;
 
+  // Generate userId data
+  const userId = crypto.randomBytes(16).toString('hex');
+
+  // Hashing the password and verify it
   const hashPassword = await bcrypt.hash(password, 10);
   const verifyPassword = await bcrypt.compare(verify_password, hashPassword);
 
   if (!verifyPassword) {
     return h.response({
-      status: 'fail',
+      status: 'failed',
       message: 'Verify password is wrong!'
     }).code(409);
   }
 
   const data = {
+    "id": userId,
     "name": name,
     "email": email,
     "phone": phone,
@@ -203,16 +169,17 @@ async function userRegisterHandler(request, h) {
   }
 
   // Check existing the user by email
-  const existUsers = await registerCheck(email);
+  const existUsers = await userCheck(email);
 
-  if (existUsers.exists) {
+  if (!existUsers.empty) {
     return h.response({
-      status: 'fail',
-      message: 'Users is already existed!'
+      status: 'failed',
+      message: 'Users email is already existed!'
     }).code(409);
   }
 
-  await userRegisterData(email, data);
+  // Registering user data to the databases
+  await userRegisterData(userId, data);
 
   return h.response({
     status: 'success',
@@ -225,26 +192,28 @@ async function userLoginHandler(request, h) {
   const { email, password } = request.payload;
 
   // Find the user by email
-  const userDoc = await userLoginData(email, password);
+  const existUsers = await userCheck(email);
+  const userDoc = existUsers.docs[0];
 
-  if (!userDoc.exists) {
+  if (existUsers.empty) {
     return h.response({
-      status: 'fail',
-      message: 'User not found'
-    }).code(404);
+      status: 'failed',
+      message: 'Invalid credentials'
+    }).code(401);
   }
 
-  const user = userDoc.data();
+  // Fetch user data
+  const userData = userDoc.data();
 
   // Compare the hashed password
-  const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcrypt.compare(password, userData.password);
 
   if (isMatch) {
     // Generate session token
     const sessionToken = uuid.v4();
 
     // Save session in Firestore
-    await userSessionData(user.email, sessionToken);
+    await userSessionData(userData.id, sessionToken);
 
     // Successful login, implement authentication token generation or session management
     return h.response({
@@ -254,8 +223,8 @@ async function userLoginHandler(request, h) {
     }).code(200);
   } else {
     return h.response({
-      status: 'fail',
-      message: 'Invalid password'
+      status: 'failed',
+      message: 'Invalid credentials',
     }).code(401);
   }
 }
@@ -263,22 +232,27 @@ async function userLoginHandler(request, h) {
 async function userLogoutHandler(request, h) {
   const sessionToken = request.headers['authorization'];
 
-  if (!sessionToken) {
-    return h.response({ error: 'No session token provided' }).code(400);
-  }
-
   // Delete session from Firestore
   await sessionDelete(sessionToken);
 
-  return h.response({ message: 'Logged out successfully' });
+  return h.response({
+    status: 'failed',
+    message: 'Logged out successfully',
+  }).code(200);
 
 }
 
 async function getProfileHandler(request, h) {
 
-  const { email } = request.params;
+  // Get session token id
+  const sessionId = request.headers['authorization'];
 
-  const userDoc = await getUserProfile(email);
+  // Fetch userId from session
+  const sessionDoc = await sessionCheck(sessionId);
+  const userId = sessionDoc.data().userId;
+
+  // Fetch user profile data
+  const userDoc = await getUserProfile(userId);
 
   // Prepare data profile
   const data = {
@@ -289,7 +263,7 @@ async function getProfileHandler(request, h) {
 
   if (!userDoc.exists) {
     return h.response({
-      status: 'fail',
+      status: 'failed',
       message: 'User not found'
     }).code(404);
   }
@@ -303,28 +277,39 @@ async function getProfileHandler(request, h) {
 async function editProfileHandler(request, h) {
   const { name, phone, email, password, verify_password } = request.payload;
 
-  const userDoc = await getUserProfile(email);
+  // Get session token id
+  const sessionId = request.headers['authorization'];
 
+  // Fetch userId from session
+  const sessionDoc = await sessionCheck(sessionId);
+  const userId = sessionDoc.data().userId;
+
+  // Fetch user profile data
+  const userDoc = await getUserProfile(userId);
+
+
+  // Validate user data is existed
   if (!userDoc.exists) {
     return h.response({
-      status: 'fail',
+      status: 'failed',
       message: 'User not found',
     }).code(404);
   }
 
+  // Check update password
   if (password) {
     const hashPassword = await bcrypt.hash(password, 10);
     const verifyPassword = await bcrypt.compare(verify_password, hashPassword);
 
     if (!verifyPassword) {
       return h.response({
-        status: 'fail',
+        status: 'failed',
         message: 'Verify password is wrong!',
       }).code(409);
     }
 
     // Update with hashed password
-    await updateUserProfile(email, {
+    await updateUserProfile(userId, {
       name,
       email,
       phone,
@@ -332,7 +317,7 @@ async function editProfileHandler(request, h) {
     });
   } else {
     // Update without password
-    await updateUserProfile(email, {
+    await updateUserProfile(userId, {
       name,
       email,
       phone,
@@ -346,10 +331,18 @@ async function editProfileHandler(request, h) {
 }
 
 async function addCartHandler(request, h) {
-  const { userId, itemId, quantity } = request.payload;
+  const { itemId, quantity } = request.payload;
+
+  // Get session token id
+  const sessionId = request.headers['authorization'];
+
+  // Fetch userId from session
+  const sessionDoc = await sessionCheck(sessionId);
+  const userId = sessionDoc.data().userId;
 
   try {
 
+    // Store data into cart
     const cartDoc = await addCart(userId, itemId, quantity);
 
     return h.response({
@@ -359,7 +352,7 @@ async function addCartHandler(request, h) {
     }).code(200);
   } catch (error) {
     return h.response({
-      status: 'fail',
+      status: 'failed',
       message: 'Failed to add item to cart',
     }).code(500);
   }
@@ -367,7 +360,13 @@ async function addCartHandler(request, h) {
 
 
 async function getCartHandler(request, h) {
-  const { userId } = request.query;
+
+  // Get session token id
+  const sessionId = request.headers['authorization'];
+
+  // Fetch userId from session
+  const sessionDoc = await sessionCheck(sessionId);
+  const userId = sessionDoc.data().userId;
 
   const dataCart = await getCart(userId);
 
@@ -378,10 +377,19 @@ async function getCartHandler(request, h) {
 }
 
 async function updateCartHandler(request, h) {
-  const { userId, batikId, batikSubId, quantity } = request.payload;
+  const { itemName, itemSubId, quantity } = request.payload;
+
+  // Get session token id
+  const sessionId = request.headers['authorization'];
+
+  // Fetch userId from session
+  const sessionDoc = await sessionCheck(sessionId);
+  const userId = sessionDoc.data().userId;
 
   try {
-    await updateCart(userId, batikId, batikSubId, quantity);
+
+    // Update cart batik item quantity
+    await updateCart(userId, itemName, itemSubId, quantity);
 
     return h.response({
       status: 'success',
@@ -389,17 +397,23 @@ async function updateCartHandler(request, h) {
     }).code(200);
   } catch (error) {
     return h.response({
-      status: 'fail',
+      status: 'failed',
       message: 'Failed to update item quantity',
     }).code(500);
   }
 }
 
 async function deleteCartHandler(request, h) {
-  const { userId } = request.payload;
+  // Get session token id
+  const sessionId = request.headers['authorization'];
+
+  // Fetch userId from session
+  const sessionDoc = await sessionCheck(sessionId);
+  const userId = sessionDoc.data().userId;
 
   try {
 
+    // Delete user's cart
     await deleteCart(userId);
 
     return h.response({
@@ -408,7 +422,7 @@ async function deleteCartHandler(request, h) {
     }).code(200);
   } catch (error) {
     return h.response({
-      status: 'fail',
+      status: 'failed',
       message: 'Failed to delete cart',
     }).code(500);
   }
@@ -416,8 +430,14 @@ async function deleteCartHandler(request, h) {
 
 async function getOrderHandler(request, h) {
 
-  const { userId } = request.query;
+  // Get session token id
+  const sessionId = request.headers['authorization'];
 
+  // Fetch userId from session
+  const sessionDoc = await sessionCheck(sessionId);
+  const userId = sessionDoc.data().userId;
+
+  // Fetch all user's order data
   const data = await getOrder(userId);
 
   return h.response({
@@ -428,10 +448,18 @@ async function getOrderHandler(request, h) {
 }
 
 async function addOrderHandler(request, h) {
-  const { userId } = request.payload;
+
+  const { name, phone, address } = request.payload;
+
+  // Get session token id
+  const sessionId = request.headers['authorization'];
+
+  // Fetch userId from session
+  const sessionDoc = await sessionCheck(sessionId);
+  const userId = sessionDoc.data().userId;
 
   // Add Order Users
-  await addOrder(userId);
+  const data = await addOrder(userId, name, phone, address);
 
   // Delete cart that has been added to order
   await deleteCart(userId);
@@ -439,13 +467,22 @@ async function addOrderHandler(request, h) {
   return h.response({
     status: 'success',
     message: 'Order added successfully',
+    data
   }).code(200);
 }
 
 async function updateOrderHandler(request, h) {
-  const { userId, orderId, status } = request.payload;
+  const { orderId, status } = request.payload;
 
-  const result = await updateOrder(userId, orderId, status);
+  // Get session token id
+  const sessionId = request.headers['authorization'];
+
+  // Fetch userId from session
+  const sessionDoc = await sessionCheck(sessionId);
+  const userId = sessionDoc.data().userId;
+
+  // Update status delivery
+  await updateOrder(userId, orderId, status);
 
   return h.response({
     status: 'success',
@@ -457,14 +494,14 @@ async function batikPredictHandler(request, h) {
   const { image } = request.payload;
   const { model } = request.server.app;
 
-  const { id, confidence } = await scanBatik(model, image);
-  const batikData = await batikGetIdData(id);
+  const { batikId, confidence } = await scanBatik(model, image);
+  const batikData = await batikGetIdData(batikId);
 
   const response = h.response({
     status: 'success',
     message: 'Model is predicted successfully',
     data: {
-      id,
+      batikId,
       confidence,
       data: batikData.data()
     }
@@ -475,4 +512,4 @@ async function batikPredictHandler(request, h) {
 }
 
 
-module.exports = { getBatikHandler, getBatikByIdHandler, getBatikCategories, searchByKeywordHandler, searchByOriginHandler, userRegisterHandler, userLoginHandler, userLogoutHandler, getProfileHandler, editProfileHandler, addCartHandler, getCartHandler, updateCartHandler, deleteCartHandler, getOrderHandler, addOrderHandler, updateOrderHandler, batikPredictHandler };
+module.exports = { getBatikHandler, getBatikByIdHandler, searchByKeywordHandler, searchByOriginHandler, userRegisterHandler, userLoginHandler, userLogoutHandler, getProfileHandler, editProfileHandler, addCartHandler, getCartHandler, updateCartHandler, deleteCartHandler, getOrderHandler, addOrderHandler, updateOrderHandler, batikPredictHandler };

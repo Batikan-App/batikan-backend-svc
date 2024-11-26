@@ -63,7 +63,7 @@ const routes = [
 
 
   {
-    path: '/api/user/profile/{email}',
+    path: '/api/user/profile',
     method: 'GET',
     handler: getProfileHandler,
   },

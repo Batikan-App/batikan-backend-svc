@@ -28,7 +28,7 @@ const InputError = require('../exceptions/InputError');
 
     if (response instanceof InputError) {
       const newResponse = h.response({
-        status: 'fail',
+        status: 'failed',
         message: response.message
       })
       newResponse.code(response.statusCode)
@@ -37,8 +37,8 @@ const InputError = require('../exceptions/InputError');
 
     if (response.isBoom) {
       const newResponse = h.response({
-        status: 'fail',
-        message: 'Payload content length greater than maximum allowed: 1000000'
+        status: 'failed',
+        message: 'Invalid request data'
       })
       newResponse.code(response.output.statusCode)
       return newResponse;

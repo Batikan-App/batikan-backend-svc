@@ -3,12 +3,11 @@ const { Firestore } = require('@google-cloud/firestore');
 async function getCart(userId) {
   const db = new Firestore();
 
+  // Fetch user's cart
   const userCartRef = db.collection('carts').doc(userId);
-
-  // Fetch the parent document for totalPrice
   const userCartDoc = await userCartRef.get();
 
-  // Check if parent document is exists
+  // Check if user's cart exists
   if (!userCartDoc.exists) {
     return {
       cartItems: [],
@@ -16,21 +15,22 @@ async function getCart(userId) {
     };
   }
 
+  // Define totalPrice of user's cart
   const totalPrice = userCartDoc.data().totalPrice || 0;
 
-  // List all sub-collections carts
-  const subCollections = await userCartRef.listCollections();
+  // List all cart item
+  const listCartItem = await userCartRef.listCollections();
   const cartItems = [];
 
-  // Iterate through each sub-collection and fetch items
-  for (const subCollection of subCollections) {
-    const itemsSnapshot = await subCollection.get();
+  // Iterate through each cart items and fetch the data
+  for (const item of listCartItem) {
+    const itemsSnapshot = await item.get();
 
     itemsSnapshot.forEach((doc) => {
       const itemData = doc.data();
       cartItems.push({
-        id: doc.id,
         ...itemData,
+        itemSubId: doc.id,
       });
     });
   }
@@ -46,38 +46,46 @@ async function getCart(userId) {
 async function addCart(userId, itemId, quantity) {
   const db = new Firestore();
 
-  const cartCollection = db.collection('carts').doc(userId);
-
+  // Fetch data batik and define cart for user
+  const cartItems = db.collection('carts').doc(userId);
   const batikItem = await db.collection('batik').doc(itemId).get();
-  const name = batikItem.data().name;
-  const price = batikItem.data().price;
 
-  // Preparing data for Cart Item
-  const item = {
-    userId,
+  const itemName = batikItem.data().name;
+  const price = batikItem.data().price;
+  const itemImage = batikItem.data().img;
+
+  // Preparing data for cart information
+  const cartData = {
     itemId,
+    itemName,
+    itemImage,
     quantity,
     price,
   };
 
-  await cartCollection.collection(name).add(item);
+  // Store cart information into database
+  await cartItems.collection(itemName).add(cartData);
 
+  // Define base totalPrice data and list all cart item
   let totalPrice = 0;
-  const listCartCollection = await cartCollection.listCollections();
+  const listCartItem = await cartItems.listCollections();
 
-  for (const subCollection of listCartCollection) {
-    const querySnapshot = await subCollection.get();
-    querySnapshot.forEach(doc => {
+  // Update totalPrice cart item
+  for (const item of listCartItem) {
+    const itemsSnapshot = await item.get();
+    itemsSnapshot.forEach(doc => {
       totalPrice += doc.data().price * doc.data().quantity;
     });
   }
 
+  // Define data totalPrice and created date of cart
   const cart = {
     totalPrice,
     createdAt: Firestore.FieldValue.serverTimestamp(),
   };
 
-  const cartDoc = await cartCollection.set(
+  // Store data totalPrice and created date into cart
+  const cartDoc = await cartItems.set(
     cart,
     { merge: true } // Ensure no data is overwritten
   );
@@ -85,14 +93,15 @@ async function addCart(userId, itemId, quantity) {
   return cartDoc;
 }
 
-async function updateCart(userId, batikId, batikSubId, quantity) {
+async function updateCart(userId, itemName, itemSubId, quantity) {
   const db = new Firestore();
 
-  // Reference to the user's cart collection
+  // Fetch user's cart
   const userCartRef = db.collection('carts').doc(userId);
 
-  // Reference to the specific batik item
-  const batikItemRef = userCartRef.collection(batikId).doc(batikSubId);
+  // Fetch user's cart batik item
+  const batikItem = userCartRef.collection(itemName);
+  const batikItemRef = batikItem.doc(itemSubId);
 
   // Fetch the batik item and check if it's already exists
   const batikItemSnapshot = await batikItemRef.get();
@@ -100,18 +109,14 @@ async function updateCart(userId, batikId, batikSubId, quantity) {
     throw new Error('Batik item not found');
   }
 
-  // Handle deletion of item if quantity is 0
+  // Handle deletion of item if quantity is 0 (zero)
   if (quantity === 0) {
+
+    // Delete cart batik item that has zero quantity
     await batikItemRef.delete();
 
-    // Check if the collection is empty after deletion
-    const remainingItemsSnapshot = await userCartRef.collection(batikId).get();
-    if (remainingItemsSnapshot.empty) {
-      // If the collection is empty, delete the entire sub-collection
-      await deleteCollection(db, userCartRef.collection(batikId), 10);
-    }
   } else {
-    // Update only the quantity if it's not zero
+    // Update only the quantity if it's not 0 (zero)
     await batikItemRef.update({ quantity });
   }
 
@@ -128,7 +133,7 @@ async function updateCart(userId, batikId, batikSubId, quantity) {
       });
     }
 
-    // Update the parent document with the new total price
+    // Update the user's cart total price data with the new total price
     return await userCartRef.set(
       {
         totalPrice,
@@ -143,14 +148,49 @@ async function updateCart(userId, batikId, batikSubId, quantity) {
 async function deleteCart(userId) {
   const db = new Firestore();
 
-  // Reference to the user's cart collection
+  // Fetch user's cart
   const userCartRef = db.collection('carts').doc(userId);
 
-  // Delete the item document
+  // List all user's cart item
+  const subCollections = await userCartRef.listCollections();
+
+  if (subCollections.length > 0) {
+    for (const subCollection of subCollections) {
+      await deleteCollection(db, subCollection);
+    }
+  }
+
+  // Delete the user's cart
   return await userCartRef.delete();
 
 }
 
+// Utility function to delete a collection
+async function deleteCollection(db, collectionRef, batchSize = 10) {
+  const query = collectionRef.limit(batchSize);
 
+  return new Promise((resolve, reject) => {
+    const deleteBatch = async () => {
+      const snapshot = await query.get();
+
+      if (snapshot.empty) {
+        resolve();
+        return;
+      }
+
+      const batch = db.batch();
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+
+      // Continue deleting the next batch
+      process.nextTick(deleteBatch);
+    };
+
+    deleteBatch().catch(reject);
+  });
+}
 
 module.exports = { getCart, addCart, updateCart, deleteCart };

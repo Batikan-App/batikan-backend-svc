@@ -3,78 +3,75 @@ const { Firestore } = require('@google-cloud/firestore');
 async function getOrder(userId) {
   const db = new Firestore();
 
-  // Define Main User's Order Document Reference
+  // Fetch user's orders
   const userOrderRef = db.collection('orders').doc(userId);
-
-  // Fetch Main User's Order Document Reference
   const orderDocSnapshot = await userOrderRef.get();
 
-  // Extract User's Order Document Data
+  // Get user's orders data
   const orderData = orderDocSnapshot.data();
 
-  // List all User's Order Collection
+  // List all user's order item collection
   const orderCollections = await userOrderRef.listCollections();
   const orderItems = [];
 
-  // Iterate Order Collection
+  // Iterate user's item order
   for (const orderCollection of orderCollections) {
     const orderCollectionSnapshot = await orderCollection.get();
     const orderCollectionItems = [];
 
-    // Fetch each document in the sub-collection
+    // Fetch each data inside user's item order
     for (const doc of orderCollectionSnapshot.docs) {
       const itemData = doc.data();
 
-      // Prepare an array for sub-subcollection data
+      // Prepare an array for batik item data inside order collection
       const itemOrderCollection = await doc.ref.listCollections();
       const itemOrderCollectionData = [];
 
-      // Iterate through sub-subcollections (e.g., "Mega Mendung")
+      // Iterate through every batik item data
       for (const itemOrder of itemOrderCollection) {
         const itemOrderSnapshot = await itemOrder.get();
         const itemOrderSnapshotItems = [];
 
-        // Fetch each document in the sub-subcollection
+        // Fetch each order item data
         itemOrderSnapshot.forEach((itemOrderDoc) => {
           itemOrderSnapshotItems.push({
-            id: itemOrderDoc.id, // Sub-subcollection document ID
-            ...itemOrderDoc.data(), // Sub-subcollection document fields
+            ...itemOrderDoc.data(),
           });
         });
 
+        // Fetch each order batik item data
         itemOrderCollectionData.push({
           itemName: itemOrder.id, // Sub-subcollection name
           data: itemOrderSnapshotItems, // List of items in this sub-subcollection
         });
       }
 
+      // Add all order data into collecting array data
       orderCollectionItems.push({
-        //id: doc.id, // Subcollection document ID
-        ...itemData, // Subcollection document fields
-        orderItems: itemOrderCollectionData, // Include sub-subcollection data
+        ...itemData,
+        orderItems: itemOrderCollectionData,
       });
     }
 
-    // Add sub-collection name and its items
+    // Add all data that has been fetch
     orderItems.push({
-      orderId: orderCollection.id, // Subcollection name
-      data: orderCollectionItems, // List of items in this subcollection
+      orderId: orderCollection.id,
+      data: orderCollectionItems,
     });
   }
 
-  // Return combined order data, items, and sub-subcollection data
+  // Return all data for displaying only
   return {
-    id: userId, // Order ID
-    ...orderData, // Order metadata
-    orderItems, // Subcollection items including sub-subcollections
+    userId: userId, // User ID
+    orders: orderItems, // Order items
   };
 
 }
 
-async function addOrder(userId) {
+async function addOrder(userId, name, phone, address) {
   const db = new Firestore();
 
-  // Fetch document for orders and carts
+  // Fetch document data for orders and carts
   const orderCollection = db.collection('orders').doc(userId);
   const cartCollection = db.collection('carts').doc(userId);
 
@@ -84,13 +81,16 @@ async function addOrder(userId) {
     throw new Error('Cart does not exist.');
   }
 
-  // Get data like createdDate and totalPrice
+  // Get cart data like totalPrice and createdDate
   const cartData = {
     ...cartItem.data(),
-    "status": "In Delivery"
+    "status": "In Delivery",
+    "name": name,
+    "phone": phone,
+    "address": address
   };
 
-  // Retrieve all sub-collections under the cart item
+  // Retrieve all data inside cart item
   const subCollections = await cartCollection.listCollections();
   const cartSubCollectionData = {};
   for (const subCollection of subCollections) {
@@ -101,11 +101,11 @@ async function addOrder(userId) {
     }));
   }
 
-  // Create a random ID for the new collection under 'orders'
-  const randomId = db.collection('_').doc().id; // Generate a random unique ID
+  // Generate a random unique ID for order id
+  const orderId = db.collection('_').doc().id;
 
-  // Save the cart document and its sub-collection into the 'orders' structure
-  const ordersSubCollectionRef = orderCollection.collection(randomId);
+  // Define orders sub-collection
+  const ordersSubCollectionRef = orderCollection.collection(orderId);
 
   // Save the cart document
   await ordersSubCollectionRef.doc(cartItem.id).set(cartData);
@@ -117,8 +117,34 @@ async function addOrder(userId) {
       .collection(subCollectionId);
     for (const doc of subCollectionDocs) {
       await targetSubCollectionRef.doc(doc.id).set(doc);
+
+      // Update stock and sales for each Batik item
+      const batikItemRef = db.collection('batik').doc(doc.itemId);
+      const batikItemSnapshot = await batikItemRef.get();
+
+      const batikItemData = batikItemSnapshot.data();
+      const newStock = batikItemData.stock - doc.quantity;
+
+      if (newStock < 0) {
+        throw new Error(`Insufficient stock for item ID ${doc.itemId}.`);
+      }
+
+      const newSales = (batikItemData.sold || 0) + doc.quantity;
+
+      // Update stock and sales in batch
+      await batikItemRef.update({
+        stock: newStock,
+        sold: newSales,
+      });
+
     }
   }
+  
+
+  return {
+    "orderId": orderId,
+    "totalPayment": cartItem.data().totalPrice
+  };
 }
 
 async function updateOrder(userId, orderId, status) {

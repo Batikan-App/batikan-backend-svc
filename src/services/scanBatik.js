@@ -23,10 +23,10 @@ async function scanBatik(model, image) {
         const predictedLabel = labels[maxScoreIndex];
         const confidence = (scores[maxScoreIndex] * 100).toFixed(2); // Confidence as percentage
 
-        const batikId = await db.collection('batik').where('name', '==', predictedLabel).get();
+        const batikItem = await db.collection('batik').where('name', '==', predictedLabel).get();
 
         return {
-            id: batikId.docs[0].id,
+            batikId: batikItem.docs[0].id,
             confidence: `${confidence}%`,
         };
     } catch (error) {

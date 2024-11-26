@@ -1,21 +1,21 @@
 const { Firestore } = require('@google-cloud/firestore');
 
-async function updateUserProfile(email, data) {
+async function updateUserProfile(userId, data) {
   const db = new Firestore();
 
-  // Find existing user by email
-  const userDoc = await db.collection('credential').doc(email).update(data);
+  // Find existing user by userId
+  const userDoc = await db.collection('users').doc(userId).update(data);
 
   return userDoc;
 }
 
-async function getUserProfile(email) {
+async function getUserProfile(userId) {
   const db = new Firestore();
 
   // Find existing user by email
-  const userDoc = await db.collection('credential').doc(email).get();
+  const userData = await db.collection('users').doc(userId).get();
 
-  return userDoc;
+  return userData;
 }
 
 module.exports = { updateUserProfile, getUserProfile };
