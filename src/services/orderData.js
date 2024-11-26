@@ -3,29 +3,70 @@ const { Firestore } = require('@google-cloud/firestore');
 async function getOrder(userId) {
   const db = new Firestore();
 
-  // Fetch document for orders user
+  // Define Main User's Order Document Reference
   const userOrderRef = db.collection('orders').doc(userId);
 
-  // List all sub-collections (e.g., Kawung, Mega Mendung)
-  const subCollections = await userOrderRef.listCollections();
+  // Fetch Main User's Order Document Reference
+  const orderDocSnapshot = await userOrderRef.get();
+
+  // Extract User's Order Document Data
+  const orderData = orderDocSnapshot.data();
+
+  // List all User's Order Collection
+  const orderCollections = await userOrderRef.listCollections();
   const orderItems = [];
 
-  // Iterate through each sub-collection and fetch items
-  for (const subCollection of subCollections) {
-    const itemsSnapshot = await subCollection.get();
+  // Iterate Order Collection
+  for (const orderCollection of orderCollections) {
+    const orderCollectionSnapshot = await orderCollection.get();
+    const orderCollectionItems = [];
 
-    itemsSnapshot.forEach((doc) => {
+    // Fetch each document in the sub-collection
+    for (const doc of orderCollectionSnapshot.docs) {
       const itemData = doc.data();
-      orderItems.push({
-        id: doc.id,
-        cartId: subCollection.id,
-        ...itemData,
+
+      // Prepare an array for sub-subcollection data
+      const itemOrderCollection = await doc.ref.listCollections();
+      const itemOrderCollectionData = [];
+
+      // Iterate through sub-subcollections (e.g., "Mega Mendung")
+      for (const itemOrder of itemOrderCollection) {
+        const itemOrderSnapshot = await itemOrder.get();
+        const itemOrderSnapshotItems = [];
+
+        // Fetch each document in the sub-subcollection
+        itemOrderSnapshot.forEach((itemOrderDoc) => {
+          itemOrderSnapshotItems.push({
+            id: itemOrderDoc.id, // Sub-subcollection document ID
+            ...itemOrderDoc.data(), // Sub-subcollection document fields
+          });
+        });
+
+        itemOrderCollectionData.push({
+          itemName: itemOrder.id, // Sub-subcollection name
+          data: itemOrderSnapshotItems, // List of items in this sub-subcollection
+        });
+      }
+
+      orderCollectionItems.push({
+        //id: doc.id, // Subcollection document ID
+        ...itemData, // Subcollection document fields
+        orderItems: itemOrderCollectionData, // Include sub-subcollection data
       });
+    }
+
+    // Add sub-collection name and its items
+    orderItems.push({
+      orderId: orderCollection.id, // Subcollection name
+      data: orderCollectionItems, // List of items in this subcollection
     });
   }
 
+  // Return combined order data, items, and sub-subcollection data
   return {
-    orderItems,
+    id: userId, // Order ID
+    ...orderData, // Order metadata
+    orderItems, // Subcollection items including sub-subcollections
   };
 
 }
@@ -46,7 +87,7 @@ async function addOrder(userId) {
   // Get data like createdDate and totalPrice
   const cartData = {
     ...cartItem.data(),
-    "status": "Pengiriman"
+    "status": "In Delivery"
   };
 
   // Retrieve all sub-collections under the cart item

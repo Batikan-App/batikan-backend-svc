@@ -1,7 +1,10 @@
 const tf = require('@tensorflow/tfjs-node');
 const InputError = require('../exceptions/InputError');
+const { Firestore } = require('@google-cloud/firestore');
 
 async function scanBatik(model, image) {
+    const db = new Firestore();
+
     try {
         const tensor = tf.node
             .decodeJpeg(image) // Decode the image (JPEG, JPG, PNG Format)
@@ -16,13 +19,15 @@ async function scanBatik(model, image) {
         const maxScoreIndex = scores.indexOf(Math.max(...scores)); // Get index of the highest score
 
         // Map the index to a class label
-        const labels = ["insang", "kawung", "mega mendung", "parang", "sidoluhur", "truntum", "tumpal"];
+        const labels = ["Insang", "Kawung", "Mega Mendung", "Parang", "Sidoluhur", "Truntum", "Tumpal"];
         const predictedLabel = labels[maxScoreIndex];
         const confidence = (scores[maxScoreIndex] * 100).toFixed(2); // Confidence as percentage
 
+        const batikId = await db.collection('batik').where('name', '==', predictedLabel).get();
+
         return {
-            label: predictedLabel,
-            confidence: `${confidence}%`
+            id: batikId.docs[0].id,
+            confidence: `${confidence}%`,
         };
     } catch (error) {
         throw new InputError('Scan Batik Failed.')

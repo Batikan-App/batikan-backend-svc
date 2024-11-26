@@ -430,7 +430,11 @@ async function getOrderHandler(request, h) {
 async function addOrderHandler(request, h) {
   const { userId } = request.payload;
 
+  // Add Order Users
   await addOrder(userId);
+
+  // Delete cart that has been added to order
+  await deleteCart(userId);
 
   return h.response({
     status: 'success',
@@ -453,14 +457,16 @@ async function batikPredictHandler(request, h) {
   const { image } = request.payload;
   const { model } = request.server.app;
 
-  const { label, confidence } = await scanBatik(model, image);
+  const { id, confidence } = await scanBatik(model, image);
+  const batikData = await batikGetIdData(id);
 
   const response = h.response({
     status: 'success',
     message: 'Model is predicted successfully',
     data: {
-      label,
-      confidence
+      id,
+      confidence,
+      data: batikData.data()
     }
   })
 
