@@ -58,13 +58,19 @@ const InputError = require('../exceptions/InputError');
     }
 
     if (!sessionToken) {
-      return h.response({ error: 'Unauthorized' }).code(401).takeover();
+      return h.response({
+        status: 'failed',
+        error: 'Unauthorized' 
+      }).code(401).takeover();
     }
 
     // Check session in Firestore
     const sessionDoc = await sessionCheck(sessionToken);
     if (!sessionDoc.exists) {
-      return h.response({ error: 'Invalid session' }).code(401).takeover();
+      return h.response({
+        status: 'failed',
+        error: 'Invalid session'
+      }).code(401).takeover();
     }
 
     const session = sessionDoc.data();
@@ -72,7 +78,10 @@ const InputError = require('../exceptions/InputError');
     // Optionally check expiration
     if (session.expires_at.toDate() < new Date()) {
       await sessionDelete(sessionToken); // Clean up expired session
-      return h.response({ error: 'Session expired' }).code(401).takeover();
+      return h.response({
+        status: 'failed',
+        error: 'Session expired'
+      }).code(401).takeover();
     }
 
     // Attach user info to request
