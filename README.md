@@ -4,6 +4,42 @@
 
 ![infrastructure-schema](https://github.com/user-attachments/assets/4f32b7d0-f464-47ac-9066-944a7da4c6c1)
 
+## Setup Project
+
+This project can be run locally using npm on your `Linux Host` using this step below.
+1. Clone Project Repository
+   ```bash
+   $ # Clone Repository Branch
+   $ git clone https://github.com/Batikan-App/batikan-backend-svc.git -b backend-api
+
+   $ # Change directory into batikan-backend-svc
+   $ cd batikan-backend-svc
+   ```
+
+2. Define `MODEL_URL` in file `.env` that locate file Model ML that used.
+   ```bash
+   $ # Please replace <bucket_name> with your own Cloud Storage Bucket
+   $ echo "MODEL_URL='https://storage.googleapis.com/<bucket_name>/model/model.json'" > .env
+   ```
+
+3. Install NodeJS Project Modules that needed using
+   ```bash
+   $ npm install
+   ```
+
+4. Run NodeJS Project
+   ```bash
+   $ # Use this line below if you want to deploy it in Development Mode
+   $ npm run start:dev
+
+   $ # Use this line below if you want to deploy it in Production Mode
+   $ npm run start
+   ```
+
+   Wait until shown text `Server listening on port 3000` that tell the Backend is ready to use.
+
+   **Note: If there any error due to connection Firestore, make sure to connect or give permission this Backend APP to the Firestore either login gcloud first if you run it locally or attach Service account into Cloud Run if you run it with Cloud Run**
+   
 ## API Documentation
 
 This document provides information about API endpoints and their functionalities. This documentation focuses on Backend API of Batikan APP uses to GET, PUT, PATCH, POST, and DELETE data who consume by our Batikan Application.
