@@ -711,8 +711,8 @@ This document provides information about API endpoints and their functionalities
    * Response Body
      ```json
      {
-        status: 'failed',
-        message: 'Invalid request data'
+        "status": "failed",
+        "message": "Invalid request data"
      }
      ```
 
@@ -720,23 +720,23 @@ This document provides information about API endpoints and their functionalities
    * Response Body
      ```json
      {
-        status: 'failed',
-        error: 'Unauthorized'
+        "status": "failed",
+        "error": "Unauthorized"
      }
      ```
 
 3. Token session is expired
      ```json
      {
-        status: 'failed',
-        error: 'Session expired'
+        "status": "failed",
+        "error": "Session expired"
      }
      ```
 
 4. Token session is invalid
      ```json
      {
-        status: 'failed',
-        error: 'Invalid session'
+        "status": "failed",
+        "error": "Invalid session"
      }
      ```
