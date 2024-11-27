@@ -401,18 +401,303 @@ This document provides information about API endpoints and their functionalities
 
 #### Cart Data Management
 1. Get user's all cart items
+   * **Endpoint**: `/api/user/cart`
+   * **Method**: `GET`
+   * **Body Parameters**: `none`
+   * **Example HTTP Headers Authorization**:
+     ```curl
+     authorization: 8fae42a0-9a0c-4c9d-81e4-19417b409c2e
+     ```
+     
+   * **Example Response**:
+     - Successfull Response.
+       ```json
+       {
+          "status": "success",
+          "data": {
+              "cartItems": [
+                  {
+                      "itemId": "4kB2ltmTHARP3iALo6Li",
+                      "itemName": "Kawung",
+                      "itemImage": "<public_url_image_in_cloud_storage>",
+                      "quantity": 30,
+                      "price": 50000,
+                      "itemSubId": "GkqGW4DjoJbphAzy1vTj"
+                  }
+              ],
+              "totalPrice": 1500000
+          }
+       }
+       ```
+
 2. Add batik items into cart
+   * **Endpoint**: `/api/user/cart`
+   * **Method**: `POST`
+   * **Body Parameters**:
+     | Field             | Type      | Description                  | Constraints                                 |
+     |-------------------|-----------|------------------------------|---------------------------------------------|
+     | `itemId`          | `string`  | ID of Batik items            | Required                                    |
+     | `quantity`        | `integer` | Quantity of Batik items      | Required                                    |
+     
+   * **Example HTTP Headers Authorization**:
+     ```curl
+     authorization: 8fae42a0-9a0c-4c9d-81e4-19417b409c2e
+     ```
+     
+   * **Example Request**:
+     ```json
+     {
+        "itemId": "G9F53OHaHpNmDSJv4anr",
+        "quantity": 30
+     }
+     ```
+     
+   * **Example Response**:
+     - Successfull Response.
+       ```json
+       {
+          "status": "success",
+          "message": "Item added to cart successfully",
+       }
+       ```
+     - Failed to add item into cart.
+       ```json
+       {
+          "status": "failed",
+          "message": "Failed to add item to cart"
+       }
+       ```
+
 3. Update user's cart items quantity
+   * **Endpoint**: `/api/user/cart`
+   * **Method**: `PATCH`
+   * **Body Parameters**:
+     | Field             | Type      | Description                  | Constraints                                 |
+     |-------------------|-----------|------------------------------|---------------------------------------------|
+     | `itemName`        | `string`  | Name of Batik items          | Required                                    |
+     | `itemSubId`       | `string`  | SubID of Batik items in cart | Required                                    |
+     | `quantity`        | `integer` | Quantity of Batik items      | Required                                    |
+     
+   * **Example HTTP Headers Authorization**:
+     ```curl
+     authorization: 8fae42a0-9a0c-4c9d-81e4-19417b409c2e
+     ```
+     
+   * **Example Request**:
+     ```json
+     {
+        "itemName": "Mega Mendung",
+        "itemSubId": "fi2IKquT142Xc178x8eb",
+        "quantity": 10
+     }
+     ```
+     
+   * **Example Response**:
+     - Successfull Response.
+       ```json
+       {
+          "status": "success",
+          "message": "Item updated to cart successfully",
+       }
+       ```
+     - Failed to update item quantity.
+       ```json
+       {
+          "status": "failed",
+          "message": "Failed to update item quantity"
+       }
+       ```
+
 4. Delete user's cart
+   * **Endpoint**: `/api/user/cart`
+   * **Method**: `DELETE`
+   * **Body Parameters**: `none`
+   * **Example HTTP Headers Authorization**:
+     ```curl
+     authorization: 8fae42a0-9a0c-4c9d-81e4-19417b409c2e
+     ```
+     
+   * **Example Response**:
+     - Successfull Response.
+       ```json
+       {
+          "status": "success",
+          "message": "Cart successfully deleted",
+       }
+       ```
+     - Failed to delete cart.
+       ```json
+       {
+          "status": "failed",
+          "message": "Failed to delete cart"
+       }
+       ```
 
 #### Order Data Management
 1. Get user's all orders
+   * **Endpoint**: `/api/user/order`
+   * **Method**: `GET`
+   * **Body Parameters**: `none`
+   * **Example HTTP Headers Authorization**:
+     ```curl
+     authorization: 8fae42a0-9a0c-4c9d-81e4-19417b409c2e
+     ```
+     
+   * **Example Response**:
+     - Successfull Response.
+       ```json
+       {
+          "status": "success",
+          "data": {
+              "userId": "6d3660ad499ac6b1e55cf263b8c912a1",
+              "orders": [
+                  {
+                      "orderId": "TznPrqKGz0uqmlgs8Ydf",
+                      "data": [
+                          {
+                              "createdAt": {
+                                  "_seconds": 1732701505,
+                                  "_nanoseconds": 465000000
+                              },
+                              "totalPrice": 1020000,
+                              "name": "Aldi Khan Sakti Alvayadi",
+                              "phone": "0812456987124",
+                              "address": "Jl. Kenangan",
+                              "status": "Delivered",
+                              "orderItems": [
+                                  {
+                                      "itemName": "Kawung",
+                                      "data": [
+                                          {
+                                              "id": "1F1o4eusoLxwBhmZk3XR",
+                                              "itemId": "G9F53OHaHpNmDSJv4anr",
+                                              "itemName": "Kawung",
+                                              "itemImage": "<public_url_image_in_cloud_storage>",
+                                              "quantity": 30,
+                                              "price": 34000
+                                          }
+                                      ]
+                                  }
+                              ]
+                          }
+                      ]
+                  }
+              ]
+          }
+       }
+       ```
+
 2. Add user's cart into order
+   * **Endpoint**: `/api/user/order`
+   * **Method**: `POST`
+   * **Body Parameters**:
+     | Field             | Type      | Description                  | Constraints                                 |
+     |-------------------|-----------|------------------------------|---------------------------------------------|
+     | `name`            | `string`  | Full name of the user        | Required                                    |
+     | `phone`           | `string`  | Phone number                 | Required                                    |
+     | `address`         | `string`  | User delivery address        | Required, must be a valid email             |
+     
+   * **Example HTTP Headers Authorization**:
+     ```curl
+     authorization: 8fae42a0-9a0c-4c9d-81e4-19417b409c2e
+     ```
+     
+   * **Example Request**:
+     ```json
+     {
+        "name": "Aldi Khan Sakti Alvayadi",
+        "phone": "0812456987124",
+        "address": "Jl. Kenangan"
+     }
+     ```
+     
+   * **Example Response**:
+     - Successfull Response.
+       ```json
+       {
+          "status": "success",
+          "message": "Order added successfully",
+          "data": {
+              "orderId": "TznPrqKGz0uqmlgs8Ydf",
+              "totalPayment": 1020000
+          }
+       }
+       ```
+
 3. Update user's order delivery status
+   * **Endpoint**: `/api/user/order`
+   * **Method**: `PUT`
+   * **Body Parameters**:
+     | Field             | Type      | Description                  | Constraints                                 |
+     |-------------------|-----------|------------------------------|---------------------------------------------|
+     | `orderId`         | `string`  | Order ID user                | Required                                    |
+     | `status`          | `string`  | Delivery status order        | Required                                    |
+     
+   * **Example HTTP Headers Authorization**:
+     ```curl
+     authorization: 8fae42a0-9a0c-4c9d-81e4-19417b409c2e
+     ```
+     
+   * **Example Request**:
+     ```json
+     {
+        "orderId": "TznPrqKGz0uqmlgs8Ydf",
+        "status": "Delivered"
+     }
+     ```
+     
+   * **Example Response**:
+     - Successfull Response.
+       ```json
+       {
+          "status": "success",
+          "message": "Order updated successfully",
+       }
+       ```
 
 #### Scan Batik Feature
 1. Scan batik image
-
+   * **Endpoint**: `/api/batik/scan`
+   * **Method**: `POST`
+   * **Body Parameters**:
+     | Field             | Type      | Description                  | Constraints                                 |
+     |-------------------|-----------|------------------------------|---------------------------------------------|
+     | `image`           | `file`    | Photo image of Batik         | Required, maximum size of image is 1 MB     |
+     
+   * **Example HTTP Headers Authorization**:
+     ```curl
+     authorization: 8fae42a0-9a0c-4c9d-81e4-19417b409c2e
+     ```
+     
+   * **Example Request**:
+     ```json
+     {
+        "image": <image_file>
+     }
+     ```
+     
+   * **Example Response**:
+     - Successfull Response.
+       ```json
+       {
+          "status": "success",
+          "message": "Model is predicted successfully",
+          "data": {
+              "batikId": "rRsxZMgPOOIaLQz6RmwC",
+              "confidence": "99.98%",
+              "data": {
+                  "desc": "Motif utama dari batik ini adalah gambar awan yang bergulung-gulung, menyerupai awan mendung. Namun, awan yang digambarkan tidak selalu berwarna gelap dan suram, melainkan sering kali diwarnai cerah dan penuh harapan.",
+                  "origin": "Cirebon, Jawa Barat",
+                  "img": "<public_url_image_in_cloud_storage>",
+                  "name": "Mega Mendung",
+                  "price": 55000,
+                  "stock": 100,
+                  "sold": 0
+              }
+          }
+       }
+       ```
+       
 ### Error Handling
 
 #### Error Status HTTP Codes
@@ -423,5 +708,35 @@ This document provides information about API endpoints and their functionalities
 
 #### General Error Handling
 1. Server error
+   * Response Body
+     ```json
+     {
+        status: 'failed',
+        message: 'Invalid request data'
+     }
+     ```
+
 2. Token session is not provided
+   * Response Body
+     ```json
+     {
+        status: 'failed',
+        error: 'Unauthorized'
+     }
+     ```
+
 3. Token session is expired
+     ```json
+     {
+        status: 'failed',
+        error: 'Session expired'
+     }
+     ```
+
+4. Token session is invalid
+     ```json
+     {
+        status: 'failed',
+        error: 'Invalid session'
+     }
+     ```
