@@ -236,7 +236,7 @@ async function userLogoutHandler(request, h) {
   await sessionDelete(sessionToken);
 
   return h.response({
-    status: 'failed',
+    status: 'success',
     message: 'Logged out successfully',
   }).code(200);
 
