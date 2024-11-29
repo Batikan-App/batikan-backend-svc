@@ -60,7 +60,7 @@ const InputError = require('../exceptions/InputError');
     if (!sessionToken) {
       return h.response({
         status: 'failed',
-        error: 'Unauthorized' 
+        message: 'Unauthorized' 
       }).code(401).takeover();
     }
 
@@ -69,7 +69,7 @@ const InputError = require('../exceptions/InputError');
     if (!sessionDoc.exists) {
       return h.response({
         status: 'failed',
-        error: 'Invalid session'
+        message: 'Invalid session'
       }).code(401).takeover();
     }
 
@@ -80,7 +80,7 @@ const InputError = require('../exceptions/InputError');
       await sessionDelete(sessionToken); // Clean up expired session
       return h.response({
         status: 'failed',
-        error: 'Session expired'
+        message: 'Session expired'
       }).code(401).takeover();
     }
 
