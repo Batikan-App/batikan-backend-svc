@@ -16,6 +16,9 @@
   * [Error Handling](#error-handling)
     * [Error Status HTTP Codes](#error-status-http-codes)
     * [General Error Handling](#general-error-handling)
+* [Firestore Database Structure](#firestore-database-structure)
+
+---
 
 ## Infrastructure Architecture
 
@@ -54,9 +57,12 @@ This project can be run locally using npm on your `Linux Host` using this step b
    ```
 
    Wait until shown text `Server listening on port 3000` that tell the Backend is ready to use.
-
-   **Note: If there any error due to connection Firestore, make sure to connect or give permission this Backend APP to the Firestore either login gcloud first if you run it locally or attach Service account into Cloud Run if you run it with Cloud Run**
    
+> [!NOTE]
+> If there any error due to connection Firestore, make sure to connect or give permission this Backend APP to the Firestore either login gcloud first if you run it locally or attach Service account into Cloud Run if you run it with Cloud Run.
+
+---
+
 ## Backend API Documentation
 
 This document provides information about API endpoints and their functionalities. This documentation focuses on Backend API of Batikan APP uses to GET, PUT, PATCH, POST, and DELETE data who consume by our Batikan Application.
@@ -468,14 +474,12 @@ This document provides information about API endpoints and their functionalities
        {
           "status": "success",
           "data": {
-              "cartItems": [
+              "cartItem": [
                   {
-                      "itemId": "4kB2ltmTHARP3iALo6Li",
-                      "itemName": "Kawung",
-                      "itemImage": "<public_url_image_in_cloud_storage>",
+                      "name": "Kawung",
+                      "img": "<public_url_image_in_cloud_storage>",
                       "quantity": 30,
-                      "price": 50000,
-                      "itemSubId": "GkqGW4DjoJbphAzy1vTj"
+                      "price": 50000
                   }
               ],
               "totalPrice": 1500000
@@ -511,6 +515,7 @@ This document provides information about API endpoints and their functionalities
        {
           "status": "success",
           "message": "Item added to cart successfully",
+          "cartId": "ca1ac7d8a0a8b8288f122ef36841b628"
        }
        ```
      - Failed to add item into cart.
@@ -527,8 +532,7 @@ This document provides information about API endpoints and their functionalities
    * **Body Parameters**:
      | Field             | Type      | Description                  | Constraints                                 |
      |-------------------|-----------|------------------------------|---------------------------------------------|
-     | `itemName`        | `string`  | Name of Batik items          | Required                                    |
-     | `itemSubId`       | `string`  | SubID of Batik items in cart | Required                                    |
+     | `itemId`          | `string`  | ID of Batik items            | Required                                    |
      | `quantity`        | `integer` | Quantity of Batik items      | Required                                    |
      
    * **Example HTTP Headers Authorization**:
@@ -539,8 +543,7 @@ This document provides information about API endpoints and their functionalities
    * **Example Request**:
      ```json
      {
-        "itemName": "Mega Mendung",
-        "itemSubId": "fi2IKquT142Xc178x8eb",
+        "itemId": "G9F53OHaHpNmDSJv4anr",
         "quantity": 10
      }
      ```
@@ -606,33 +609,27 @@ This document provides information about API endpoints and their functionalities
               "orders": [
                   {
                       "orderId": "TznPrqKGz0uqmlgs8Ydf",
-                      "data": [
+                      "createdAt": {
+                          "_seconds": 1732701505,
+                          "_nanoseconds": 465000000
+                      },
+                      "totalPayment": 1020000,
+                      "name": "Aldi Khan Sakti Alvayadi",
+                      "phone": "0812456987124",
+                      "address": "Jl. Kenangan",
+                      "status": "Delivered",
+                      "userId": "6d3660ad499ac6b1e55cf263b8c912a1",
+                      "updatedAt": {
+                          "_seconds": 1732701505,
+                          "_nanoseconds": 465000000
+                      },
+                      "items": [
                           {
-                              "createdAt": {
-                                  "_seconds": 1732701505,
-                                  "_nanoseconds": 465000000
-                              },
-                              "totalPrice": 1020000,
-                              "name": "Aldi Khan Sakti Alvayadi",
-                              "phone": "0812456987124",
-                              "address": "Jl. Kenangan",
-                              "status": "Delivered",
-                              "orderItems": [
-                                  {
-                                      "itemName": "Kawung",
-                                      "data": [
-                                          {
-                                              "id": "1F1o4eusoLxwBhmZk3XR",
-                                              "itemId": "G9F53OHaHpNmDSJv4anr",
-                                              "itemName": "Kawung",
-                                              "itemImage": "<public_url_image_in_cloud_storage>",
-                                              "quantity": 30,
-                                              "price": 34000
-                                          }
-                                      ]
-                                  }
-                              ]
-                          }
+                              "name": "Kawung",
+                              "img": "<public_url_image_in_cloud_storage>",
+                              "quantity": 30,
+                              "price": 34000
+                           }
                       ]
                   }
               ]
@@ -774,7 +771,7 @@ This document provides information about API endpoints and their functionalities
      ```json
      {
         "status": "failed",
-        "error": "Unauthorized"
+        "message": "Unauthorized"
      }
      ```
 
@@ -782,7 +779,7 @@ This document provides information about API endpoints and their functionalities
      ```json
      {
         "status": "failed",
-        "error": "Session expired"
+        "message": "Session expired"
      }
      ```
 
@@ -790,6 +787,107 @@ This document provides information about API endpoints and their functionalities
      ```json
      {
         "status": "failed",
-        "error": "Invalid session"
+        "message": "Invalid session"
      }
      ```
+
+5. Insufficient stock items
+     ```json
+     {
+        "status": "failed",
+        "message": "Insufficient stock for item {item_name}."
+     }
+     ```
+
+6. Order ID that requested is not authorized
+     ```json
+     {
+        "status": "failed",
+        "message": "Order ID is not authorized!"
+     }
+     ```
+
+---
+
+## Firestore Database Structure
+### **Overview**
+
+The backend uses **Firestore** as the database to store data. Below is an explanation of the collections, documents, and their fields.
+
+### **Collections and Documents**
+
+#### 1. **`users` Collection**
+- **Description**: Stores user information for authentication and profile management.
+- **Structure**:
+  ```yaml
+  users (Collection)
+  └── {userId} (Document)
+       ├── id: string (Reference to `users/{userId}`)
+       ├── name: string
+       ├── email: string
+       ├── phone: string
+       └── password: string
+  ```
+
+#### 2. **`sessions` Collection**
+- **Description**: Stores user session information for authorization.
+- **Structure**:
+  ```yaml
+  sessions (Collection)
+  └── {token} (Document)
+       ├── id: string (Reference to `sessions/{token}`)
+       ├── userId: string (Reference to `users/{userId}`)
+       ├── created_at: timestamp
+       └── expired_at: timestamp
+  ```
+
+#### 3. **`batik` Collection**
+- **Description**: Stores information about batik items.
+- **Structure**:
+  ```yaml
+  batik (Collection)
+  └── {batikId} (Document)
+       ├── name: string
+       ├── desc: string
+       ├── origin: string
+       ├── img: string
+       ├── price: integer
+       ├── sold: integer
+       └── stock: integer
+  ```
+
+#### 4. **`carts` Collection**
+- **Description**: Stores carts made by users.
+- **Structure**:
+  ```yaml
+  carts (Collection)
+  └── {cartId} (Document) (Reference to `users/{userId}`)
+       ├── createdAt: timestamp
+       ├── totalPrice: integer
+       └── items (Collection)
+            └── {batikId} (Document) (Reference to `batik/{batikId}`)
+                 ├── img: string
+                 ├── name: string
+                 ├── price: integer
+                 └── quantity: integer
+  ```
+
+#### 5. **`orders` Collection**
+- **Description**: Stores orders made by users.
+- **Structure**:
+  ```yaml
+  orders (Collection)
+  └── {orderId} (Document)
+       ├── userId: string (Reference to `users/{userId}`)
+       ├── totalPrice: number
+       ├── status: string
+       ├── createdAt: timestamp
+       ├── updatedAt: timestamp
+       └── items (Collection)
+            └── {batikId} (Document) (Reference to `batik/{batikId}`)
+                 ├── img: string
+                 ├── name: string
+                 ├── price: integer
+                 └── quantity: integer
+  ```
+  
