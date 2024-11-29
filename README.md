@@ -1,5 +1,22 @@
 # Batikan APP C242-PS436
 
+## Table of Contents
+* [Infrastructure Architecture](#infrastructure-architecture)
+* [Setup Project](#setup-project)
+* [Backend API Documentation](#backend-api-documentation)
+  * [Overview](#overview)
+  * [API Endpoint Route](#api-endpoint-route)
+  * [API Endpoint Data](#api-endpoint-data)
+    * [User Authentication Endpoints](#user-authentication-endpoints)
+    * [User Profile Management](#user-profile-management)
+    * [Batik Items Management](#batik-items-management)
+    * [Cart Data Management](#cart-data-management)
+    * [Order Data Management](#order-data-management)
+    * [Scan Batik Feature](#scan-batik-feature)
+  * [Error Handling](#error-handling)
+    * [Error Status HTTP Codes](#error-status-http-codes)
+    * [General Error Handling](#general-error-handling)
+
 ## Infrastructure Architecture
 
 ![infrastructure-schema](https://github.com/user-attachments/assets/4f32b7d0-f464-47ac-9066-944a7da4c6c1)
@@ -40,7 +57,7 @@ This project can be run locally using npm on your `Linux Host` using this step b
 
    **Note: If there any error due to connection Firestore, make sure to connect or give permission this Backend APP to the Firestore either login gcloud first if you run it locally or attach Service account into Cloud Run if you run it with Cloud Run**
    
-## API Documentation
+## Backend API Documentation
 
 This document provides information about API endpoints and their functionalities. This documentation focuses on Backend API of Batikan APP uses to GET, PUT, PATCH, POST, and DELETE data who consume by our Batikan Application.
 
