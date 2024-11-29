@@ -3,163 +3,143 @@ const { Firestore } = require('@google-cloud/firestore');
 async function getOrder(userId) {
   const db = new Firestore();
 
-  // Fetch user's orders
-  const userOrderRef = db.collection('orders').doc(userId);
-  const orderDocSnapshot = await userOrderRef.get();
+  // Fetch every orders related to the users
+  const userOrders = await db.collection('orders').where('userId', '==', userId).get();
 
-  // Get user's orders data
-  const orderData = orderDocSnapshot.data();
+  // Empty order for users
+  if (userOrders.empty) {
+    return { userId, orders: [] };
+  }
 
-  // List all user's order item collection
-  const orderCollections = await userOrderRef.listCollections();
-  const orderItems = [];
+  // Array for collecting all orders users
+  const orders = [];
 
-  // Iterate user's item order
-  for (const orderCollection of orderCollections) {
-    const orderCollectionSnapshot = await orderCollection.get();
-    const orderCollectionItems = [];
+  // Process extract every user's order data
+  for (const userOrder of userOrders.docs) {
 
-    // Fetch each data inside user's item order
-    for (const doc of orderCollectionSnapshot.docs) {
-      const itemData = doc.data();
+    // Get data field of user order document
+    const orderData = userOrder.data();
 
-      // Prepare an array for batik item data inside order collection
-      const itemOrderCollection = await doc.ref.listCollections();
-      const itemOrderCollectionData = [];
+    // Listing every items inside user's order
+    const orderItems = await userOrder.ref.collection('items').get();
 
-      // Iterate through every batik item data
-      for (const itemOrder of itemOrderCollection) {
-        const itemOrderSnapshot = await itemOrder.get();
-        const itemOrderSnapshotItems = [];
+    const items = [];
 
-        // Fetch each order item data
-        itemOrderSnapshot.forEach((itemOrderDoc) => {
-          itemOrderSnapshotItems.push({
-            ...itemOrderDoc.data(),
-          });
-        });
-
-        // Fetch each order batik item data
-        itemOrderCollectionData.push({
-          itemName: itemOrder.id, // Sub-subcollection name
-          data: itemOrderSnapshotItems, // List of items in this sub-subcollection
-        });
-      }
-
-      // Add all order data into collecting array data
-      orderCollectionItems.push({
-        ...itemData,
-        orderItems: itemOrderCollectionData,
+    for (const orderItem of orderItems.docs) {
+      items.push({
+        ...orderItem.data()
       });
     }
 
-    // Add all data that has been fetch
-    orderItems.push({
-      orderId: orderCollection.id,
-      data: orderCollectionItems,
+    // Save order's items, order's document data field, and it's orderId into orders
+    orders.push({
+      orderId: userOrder.id,
+      ...orderData,
+      items,
     });
   }
 
-  // Return all data for displaying only
   return {
-    userId: userId, // User ID
-    orders: orderItems, // Order items
+    userId,
+    orders,
   };
 
 }
 
-async function addOrder(userId, name, phone, address) {
+async function addOrder(cartId, name, phone, address) {
   const db = new Firestore();
 
-  // Fetch document data for orders and carts
-  const orderCollection = db.collection('orders').doc(userId);
-  const cartCollection = db.collection('carts').doc(userId);
+  // Fetch user carts
+  const userCart = await db.collection('carts').doc(cartId).get();
 
-  // Retrieve the cart item and its sub-collection
-  const cartItem = await cartCollection.get();
-  if (!cartItem.exists) {
-    throw new Error('Cart does not exist.');
+  const totalPrice = userCart.data().totalPrice;
+
+  // Define data field for orders document
+  const orderData = {
+    userId: cartId,
+    totalPayment: totalPrice,
+    status: "In Delivery",
+    name,
+    address,
+    phone
   }
 
-  // Get cart data like totalPrice and createdDate
-  const cartData = {
-    ...cartItem.data(),
-    "status": "In Delivery",
-    "name": name,
-    "phone": phone,
-    "address": address
-  };
+  // Create Cart Collection for moving it into Order
+  const cartItemData = {};
+  const cartItems = db.collection('carts').doc(cartId).collection('items');
 
-  // Retrieve all data inside cart item
-  const subCollections = await cartCollection.listCollections();
-  const cartSubCollectionData = {};
-  for (const subCollection of subCollections) {
-    const subCollectionDocs = await subCollection.get();
-    cartSubCollectionData[subCollection.id] = subCollectionDocs.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-  }
+  await cartItems.get().then(data => {
+    data.forEach(doc => {
+      cartItemData[doc.id] = doc.data();
+    });
+  });
 
   // Generate a random unique ID for order id
   const orderId = db.collection('_').doc().id;
+  const userOrder = db.collection('orders').doc(orderId);
 
-  // Define orders sub-collection
-  const ordersSubCollectionRef = orderCollection.collection(orderId);
+  // Save every carts item into user order's items
+  for (const [cartId, cartItem] of Object.entries(cartItemData)) {
+    const orderItems = userOrder.collection('items').doc(cartId);
 
-  // Save the cart document
-  await ordersSubCollectionRef.doc(cartItem.id).set(cartData);
+    // Update stock and sales for each Batik item
+    const batikItem = db.collection('batik').doc(cartId);
+    const batikItemSnapshot = await batikItem.get();
 
-  // Save the sub-collection data under the cart document
-  for (const [subCollectionId, subCollectionDocs] of Object.entries(cartSubCollectionData)) {
-    const targetSubCollectionRef = ordersSubCollectionRef
-      .doc(cartItem.id)
-      .collection(subCollectionId);
-    for (const doc of subCollectionDocs) {
-      await targetSubCollectionRef.doc(doc.id).set(doc);
+    const batikItemData = batikItemSnapshot.data();
+    const newStock = batikItemData.stock - cartItem.quantity;
 
-      // Update stock and sales for each Batik item
-      const batikItemRef = db.collection('batik').doc(doc.itemId);
-      const batikItemSnapshot = await batikItemRef.get();
-
-      const batikItemData = batikItemSnapshot.data();
-      const newStock = batikItemData.stock - doc.quantity;
-
-      if (newStock < 0) {
-        throw new Error(`Insufficient stock for item ID ${doc.itemId}.`);
-      }
-
-      const newSales = (batikItemData.sold || 0) + doc.quantity;
-
-      // Update stock and sales in batch
-      await batikItemRef.update({
-        stock: newStock,
-        sold: newSales,
-      });
-
+    // Check insufficient stock
+    if (newStock < 0) {
+      throw new Error(`Insufficient stock for item ${batikItemData.name}.`);
     }
+
+    // Store cart item into order
+    await orderItems.set(cartItem);
+
+    const newSales = (batikItemData.sold || 0) + cartItem.quantity;
+
+    // Update stock and sales in batch
+    await batikItem.update({
+      stock: newStock,
+      sold: newSales,
+    });
   }
-  
+
+  // Save Order Data into Order Document
+  await userOrder.set(
+    {
+      ...orderData,
+      createdAt: Firestore.FieldValue.serverTimestamp(),
+      updatedAt: Firestore.FieldValue.serverTimestamp()
+    },
+    { merge: true } // Ensure no data is overwritten
+  );
 
   return {
     "orderId": orderId,
-    "totalPayment": cartItem.data().totalPrice
+    "totalPayment": totalPrice
   };
+
 }
 
 async function updateOrder(userId, orderId, status) {
   const db = new Firestore();
 
   // Reference to the user's cart collection
-  const userOrderRef = db.collection('orders').doc(userId);
+  const userOrder = db.collection('orders').doc(orderId);
+  const userOrderCheck = await userOrder.get();
 
-  // Reference to the specific batik item
-  const orderItemRef = userOrderRef.collection(orderId).doc(userId);
+  // Check Order is for authorized user only
+  if (userOrderCheck.data().userId != userId){
+    throw new Error('Order ID is not authorized!');
+  }
 
   // Update the parent document with the new total price
-  return await orderItemRef.set(
+  return await userOrder.set(
     {
       status: status,
+      updatedAt: Firestore.FieldValue.serverTimestamp()
     },
     { merge: true } // Ensure no data is overwritten
   );

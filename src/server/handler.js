@@ -377,7 +377,7 @@ async function getCartHandler(request, h) {
 }
 
 async function updateCartHandler(request, h) {
-  const { itemName, itemSubId, quantity } = request.payload;
+  const { itemId, quantity } = request.payload;
 
   // Get session token id
   const sessionId = request.headers['authorization'];
@@ -389,7 +389,7 @@ async function updateCartHandler(request, h) {
   try {
 
     // Update cart batik item quantity
-    await updateCart(userId, itemName, itemSubId, quantity);
+    await updateCart(userId, itemId, quantity);
 
     return h.response({
       status: 'success',
@@ -458,17 +458,24 @@ async function addOrderHandler(request, h) {
   const sessionDoc = await sessionCheck(sessionId);
   const userId = sessionDoc.data().userId;
 
-  // Add Order Users
-  const data = await addOrder(userId, name, phone, address);
+  try {
+    // Add Order Users
+    const data = await addOrder(userId, name, phone, address);
 
-  // Delete cart that has been added to order
-  await deleteCart(userId);
+    // Delete cart that has been added to order
+    await deleteCart(userId);
 
-  return h.response({
-    status: 'success',
-    message: 'Order added successfully',
-    data
-  }).code(200);
+    return h.response({
+      status: 'success',
+      message: 'Order added successfully',
+      data
+    }).code(200);
+  } catch(error) {
+    return h.response({
+      status: 'failed',
+      message: error.message
+    }).code(500);
+  }
 }
 
 async function updateOrderHandler(request, h) {
