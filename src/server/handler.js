@@ -470,7 +470,7 @@ async function addOrderHandler(request, h) {
       message: 'Order added successfully',
       data
     }).code(200);
-  } catch(error) {
+  } catch (error) {
     return h.response({
       status: 'failed',
       message: error.message
@@ -488,13 +488,20 @@ async function updateOrderHandler(request, h) {
   const sessionDoc = await sessionCheck(sessionId);
   const userId = sessionDoc.data().userId;
 
-  // Update status delivery
-  await updateOrder(userId, orderId, status);
+  try {
+    // Update status delivery
+    await updateOrder(userId, orderId, status);
 
-  return h.response({
-    status: 'success',
-    message: 'Order updated successfully',
-  }).code(200);
+    return h.response({
+      status: 'success',
+      message: 'Order updated successfully',
+    }).code(200);
+  } catch (error) {
+    return h.response({
+      status: 'failed',
+      message: error.message
+    }).code(500);
+  }
 }
 
 async function batikPredictHandler(request, h) {
