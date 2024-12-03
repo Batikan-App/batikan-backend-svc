@@ -2,6 +2,7 @@
 
 ## Table of Contents
 * [Infrastructure Architecture](#infrastructure-architecture)
+* [Convert H5 Keras Files into Graph Model](#convert-h5-keras-files-into-graph-model)
 * [Setup Project](#setup-project)
 * [Backend API Documentation](#backend-api-documentation)
   * [Overview](#overview)
@@ -24,12 +25,46 @@
 
 ![infrastructure-schema](https://github.com/user-attachments/assets/4f32b7d0-f464-47ac-9066-944a7da4c6c1)
 
+## Convert H5 Keras Files into Graph Model
+
+This project using `graph model` to processing Machine Learning in the Backend, and to be able to do that we need to convert file formatted *.h5 keras files into graph model using this step below.
+1. Clone Main Branch and install requirements module
+   ```bash
+   $ # Clone Repository Main Branch
+   $ git clone https://github.com/Batikan-App/batikan-backend-svc.git
+
+   $ # Change directory into batikan-backend-svc
+   $ cd batikan-backend-svc
+   
+   $ # Install requirements module
+   $ pip install -r requirements.txt
+   ```
+
+2. Convert file formatted *.h5 into tfjs
+   ```bash
+   $ # Convert file *.h5 into tfjs
+   $ # For Example: python tools/convert-rapi.py batikan_model.h5 batikan_tfjs_model
+   $ python tools/convert-h5-to-tfjs.py <h5_file_format> <output_folder>
+   ```
+
+3. Convert tfjs into graph model using `tensorflowjs_converter`
+   ```bash
+   $ # Convert tfjs model into graph model
+   $ # For Example: tensorflowjs_converter --input_format=tf_saved_model --output_format=tfjs_graph_model batikan_tfjs_model batikan_tfjs_model
+   $ tensorflowjs_converter --input_format=tf_saved_model --output_format=tfjs_graph_model <tfjs_model_folder> <output_folder>
+   ```
+
+> [!NOTE]
+> File `model.json` can we find in the `<output_folder>` after we convert tfjs_model into graph_model and If you want to use it in Google Cloud, you can upload it into `cloud storage` after that you copy public url of file `model.json` for using it.
+
 ## Setup Project
 
 This project can be run locally using npm on your `Linux Host` using this step below.
-1. Clone Project Repository
+1. Clone Project Repository in branch `backend-api`
    ```bash
-   $ # Clone Repository Branch
+   $ # Clone Repository Branch backend-api if you didn't yet clone the Main Branch
+   $ # If you have already clone Main branch of this repository than you just need to run 'git checkout backend-api' instead
+   $
    $ git clone https://github.com/Batikan-App/batikan-backend-svc.git -b backend-api
 
    $ # Change directory into batikan-backend-svc
@@ -40,6 +75,10 @@ This project can be run locally using npm on your `Linux Host` using this step b
    ```bash
    $ # Please replace <bucket_name> with your own Cloud Storage Bucket
    $ echo "MODEL_URL='https://storage.googleapis.com/<bucket_name>/model/model.json'" > .env
+
+   $ # If you choose to use model.json locally so you can use file url like this
+   $ # For Example: echo "MODEL_URL='file:///model/model.json'" > .env
+   $ echo "MODEL_URL='file:///<location_to_file_model.json>'" > .env
    ```
 
 3. Install NodeJS Project Modules that needed using
