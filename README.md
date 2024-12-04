@@ -40,17 +40,17 @@ This project using `graph model` to processing Machine Learning in the Backend, 
    $ pip install -r requirements.txt
    ```
 
-2. Convert file formatted *.h5 into tfjs
+2. Convert file formatted *.h5 into saved model
    ```bash
    $ # Convert file *.h5 into tfjs
-   $ # For Example: python tools/convert-rapi.py batikan_model.h5 batikan_tfjs_model
-   $ python tools/convert-h5-to-tfjs.py <h5_file_format> <output_folder>
+   $ # For Example: python tools/convert-rapi.py batikan_model.h5 batikan_saved_model
+   $ python tools/convert-h5-to-saved.py <h5_file_format> <output_folder>
    ```
 
-3. Convert tfjs into graph model using `tensorflowjs_converter`
+3. Convert saved model into graph model using `tensorflowjs_converter`
    ```bash
-   $ # Convert tfjs model into graph model
-   $ # For Example: tensorflowjs_converter --input_format=tf_saved_model --output_format=tfjs_graph_model batikan_tfjs_model batikan_tfjs_model
+   $ # Convert saved model into graph model
+   $ # For Example: tensorflowjs_converter --input_format=tf_saved_model --output_format=tfjs_graph_model batikan_saved_model batikan_tfjs_model
    $ tensorflowjs_converter --input_format=tf_saved_model --output_format=tfjs_graph_model <tfjs_model_folder> <output_folder>
    ```
 
