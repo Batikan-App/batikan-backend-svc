@@ -44,7 +44,7 @@ This project using `graph model` to processing Machine Learning in the Backend, 
    ```bash
    $ # Convert file *.h5 into tfjs
    $ # For Example: python tools/convert-rapi.py batikan_model.h5 batikan_saved_model
-   $ python tools/convert-h5-to-saved.py <h5_file_format> <output_folder>
+   $ python tools/convert-h5-to-saved-format.py <h5_file_format> <output_folder>
    ```
 
 3. Convert saved model into graph model using `tensorflowjs_converter`
