@@ -513,8 +513,10 @@ This document provides information about API endpoints and their functionalities
        {
           "status": "success",
           "data": {
+              "id": "6d3660ad499ac6b1e55cf263b8c912a1",
               "cartItem": [
                   {
+                      "id": "G9F53OHaHpNmDSJv4anr",
                       "name": "Kawung",
                       "img": "<public_url_image_in_cloud_storage>",
                       "quantity": 30,
