@@ -67,6 +67,7 @@ async function addCart(userId, itemId, quantity) {
 
     // Preparing data for cart information
     const cartData = {
+      id: itemId,
       name: itemName,
       img: itemImage,
       quantity,
